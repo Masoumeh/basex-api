@@ -12,7 +12,6 @@ import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
-
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
 import com.vividsolutions.jts.io.gml2.*;
@@ -658,6 +657,7 @@ public class Geo extends QueryModule {
     return gmlWriter(((Polygon) geo).getInteriorRingN((int) n - 1));
   }
 
+
   // PRIVATE METHODS (hidden from user of module) ========================================
 
   /**
@@ -668,10 +668,13 @@ public class Geo extends QueryModule {
    * @throws QueryException query exception
    */
   private Geometry checkGeo(final ANode node) throws QueryException {
-    final Geometry geo = geo(node, QNAMES);
+final Geometry geo = geo(node, QNAMES);
     if(geo == null) throw GeoErrors.unrecognizedGeo(node.qname().local());
     return geo;
   }
+
+//  long parseTime;
+//  long createTime;
 
   /**
    * Reads an element as a gml node. Returns a geometry element
@@ -684,22 +687,21 @@ public class Geo extends QueryModule {
   private Geometry geo(final ANode node, final QNm... names) throws QueryException {
     if(node.type != NodeType.ELM)
       Err.FUNCMP.thrw(null, this, NodeType.ELM, node.type);
-
-    final QNm qname = node.qname();
-    for(final QNm geo : names) {
-      if(!qname.eq(geo)) continue;
-      // type found... create reader and geometry element
+       // type found... create reader and geometry element
       try {
-        final String input = node.serialize().toString();
-        final GMLReader gmlReader = new GMLReader();
-        final GeometryFactory geoFactory = new GeometryFactory();
-        return gmlReader.read(input, geoFactory);
+        final GmlReader bxGmlReader = new GmlReader();
+        //final GeometryFactory geoFactory = new GeometryFactory();
+        final Geometry geo = bxGmlReader.createGeometry(node);
+        return geo;
       } catch (final Throwable e) {
         throw GeoErrors.gmlReaderErr(e);
       }
-    }
-    return null;
   }
+
+//  public void time() {
+//    System.out.println("Parse: " + Performance.getTime(parseTime, 1));
+//    System.out.println("Create: " + Performance.getTime(createTime, 1));
+//  }
 
   /**
    * Writes an geometry and returns a string representation of the geometry.
@@ -720,6 +722,6 @@ public class Geo extends QueryModule {
       return new DBNode(MemBuilder.build(new XMLParser(io, context.context.prop)));
     } catch(final IOException ex) {
       throw Err.IOERR.thrw(null, ex);
-    }
+   }
   }
 }

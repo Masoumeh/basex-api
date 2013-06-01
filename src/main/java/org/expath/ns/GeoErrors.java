@@ -58,14 +58,66 @@ public final class GeoErrors {
     return thrw(4, "Out of range input index: %", geoNumber);
   }
 
-
   /**
-   * GEO0005: gml writer error massage (JTS).
+   * GEO0005: gmlWriter Error(JTS).
    * @param e error
    * @return query exception
    */
   static QueryException gmlWriterErr(final Object e) {
     return thrw(5, "%", e);
+  }
+
+  /**
+   * GEO0006: Geometry assertion failed.
+   * @param e error
+   * @return query exception
+   */
+  static QueryException geoAssrErr(final Object e) {
+    return thrw(6, "Geometry (%) assertion failed", e);
+  }
+
+  /**
+   * GEO0007: Invalid number of outer boundary.
+   * @param e error
+   * @return query exception
+   */
+  static QueryException outRingErr(final Object e) {
+    return thrw(7, "Invalid number of ouetr boundary in %.", e);
+  }
+
+
+//  /**
+//   * GEO0008: Invalid number of points.
+//   * @param e error
+//   * @return query exception
+//   */
+//  static QueryException pointsNumErr(final Object e) {
+//    return thrw(8, "Invalid number of points in %.", e);
+//  }
+//
+//  /**
+//   * GEO0009: Open LinearRing.
+//   * @return query exception
+//   */
+//  static QueryException openRingErr() {
+//    return thrw(9, "The LinearRing is not a closed line.");
+//  }
+
+/**
+* GEO0008: Illegal access exception or assertion failure error.
+* @param e error
+* @return query exception
+*/
+static QueryException jtsConstruction(final Object e) {
+ return thrw(8, "Assertion faild: %.", e);
+}
+
+  /**
+   * GEO0009: Empty coordinate.
+   * @return query exception
+   */
+  static QueryException invalidCoordErr() {
+    return thrw(9, "Invalid coordinate found.");
   }
 
   /**
