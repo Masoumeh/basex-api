@@ -34,9 +34,9 @@ public final class GeoErrors {
    * @param e error
    * @return query exception
    */
-  static QueryException gmlReaderErr(final Object e) {
-    return thrw(2, "%", e);
-  }
+//  static QueryException gmlReaderErr(final Object e) {
+//    return thrw(2, "%", e);
+//  }
 
   /**
    * GEO0003: Inappropriate input geometry.

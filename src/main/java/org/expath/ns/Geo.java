@@ -4,8 +4,11 @@ import static org.basex.util.Token.*;
 
 import java.io.*;
 
+import org.basex.*;
 import org.basex.build.*;
 import org.basex.build.xml.*;
+import org.basex.core.*;
+import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.util.*;
@@ -349,6 +352,11 @@ public class Geo extends QueryModule {
   public ANode union(final ANode node1, final ANode node2) throws QueryException {
     final Geometry geo1 = checkGeo(node1);
     final Geometry geo2 = checkGeo(node2);
+    GeometryFactory geoFactory = new GeometryFactory();
+//    Geometry[] c = null;
+//    c[0] = geo1;
+//    c[1] = geo2;
+//    GeometryCollection g = new GeometryCollection(c, geoFactory);
     return gmlWriter(geo1.union(geo2));
   }
 
@@ -422,7 +430,7 @@ public class Geo extends QueryModule {
     if(geo == null && checkGeo(node) != null)
       throw GeoErrors.geoType(node.qname().local(), "Point");
 
-    return Dbl.get(geo.getCoordinate().x);
+    return Dbl.get( geo.getCoordinate().x);
   }
 
   /**
@@ -687,15 +695,26 @@ final Geometry geo = geo(node, QNAMES);
   private Geometry geo(final ANode node, final QNm... names) throws QueryException {
     if(node.type != NodeType.ELM)
       Err.FUNCMP.thrw(null, this, NodeType.ELM, node.type);
-       // type found... create reader and geometry element
+    final QNm qname = node.qname();
+    for(final QNm geo : names) {
+      if(!qname.eq(geo)) continue;
+    // type found... create reader and geometry element
       try {
         final GmlReader bxGmlReader = new GmlReader();
-        //final GeometryFactory geoFactory = new GeometryFactory();
-        final Geometry geo = bxGmlReader.createGeometry(node);
-        return geo;
+//        final String input = node.serialize().toString();
+//        final GMLReader gmlReader = new GMLReader();
+//        final GeometryFactory geoFactory = new GeometryFactory();
+//        return gmlReader.read(input, geoFactory);
+ //       final Geometry geo = 
+        return bxGmlReader.createGeometry(node);
+
+      } catch (QueryException qe) {
+        throw qe;
       } catch (final Throwable e) {
-        throw GeoErrors.gmlReaderErr(e);
+        throw GeoErrors.geoAssrErr(e);
       }
+    }
+    return null;
   }
 
 //  public void time() {
@@ -719,9 +738,14 @@ final Geometry geo = geo(node, QNAMES);
 
     try {
       final IO io = new IOContent(geo);
-      return new DBNode(MemBuilder.build(new XMLParser(io, context.context.prop)));
+      XMLParser xp = new XMLParser(io, context.context.prop);
+      MemData md =  MemBuilder.build(xp);
+      return new DBNode(md);
     } catch(final IOException ex) {
       throw Err.IOERR.thrw(null, ex);
    }
+  }
+  public static void main (String[] args) throws Exception {
+    new BaseXGUI();
   }
 }
