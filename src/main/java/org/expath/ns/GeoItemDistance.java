@@ -47,53 +47,5 @@ public class GeoItemDistance implements ItemDistance {
     }
     return gid.distance(new ItemBoundable(geom1.getEnvelopeInternal(), geom1),
         new ItemBoundable(geom2.getEnvelopeInternal(), geom2));
-    //geom1.distance(geom2);
-
-//    Nodes n = new Nodes((Integer) item1.getItem(), data);
-//    ArrayOutput ao = new ArrayOutput().max(10000);
-//    if(n != null)
-//      try {
-//      n.serialize(Serializer.get(ao));
-//    } catch(IOException e1) {
-//      // TODO Auto-generated catch block
-//      e1.printStackTrace();
-//    }
-//    GMLReader gmlr = new GMLReader();
-//    GeometryFactory geometryFactory = new GeometryFactory();
-//    try {
-//      geom1 = gmlr.read(ao.toString(), geometryFactory);
-//    } catch(SAXException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    } catch(IOException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    } catch(ParserConfigurationException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    }
-//
-//    n = new Nodes((Integer) item2.getItem(), data);
-//    ao = new ArrayOutput().max(10000);
-//    if(n != null) try {
-//      n.serialize(Serializer.get(ao));
-//    } catch(IOException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    }
-//    gmlr = new GMLReader();
-//    geometryFactory = new GeometryFactory();
-//    try {
-//      geom2 = gmlr.read(ao.toString(), geometryFactory);
-//    } catch(SAXException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    } catch(IOException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    } catch(ParserConfigurationException e) {
-//      // TODO Auto-generated catch block
-//      e.printStackTrace();
-//    }
    }
 }
