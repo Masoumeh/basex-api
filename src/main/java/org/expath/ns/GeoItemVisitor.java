@@ -3,8 +3,12 @@ package org.expath.ns;
 import java.util.*;
 
 import org.basex.data.*;
+import org.basex.query.*;
+import org.basex.query.iter.*;
+import org.basex.query.value.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
+
 import com.vividsolutions.jts.index.*;
 
 /**
@@ -22,7 +26,7 @@ public class GeoItemVisitor implements ItemVisitor{
   Data data;
   /** Nodes. */
   List<DBNode> nodes = new ArrayList<DBNode>();
-
+  //ValueBuilder nodes = new ValueBuilder();
   /**
    * Default constructor.
    * @param d Data
@@ -35,14 +39,19 @@ public class GeoItemVisitor implements ItemVisitor{
    * Property to get the list of nodes.
    * @return nodes
    */
-  public List<DBNode> getList() {
+  public List<DBNode> /*Value*/ getList() {
+    System.out.println("visit size: " + nodes.size());
+    //return nodes;
     return nodes;
   }
 
   @Override
   public void visitItem(final Object item) {
     DBNode dn = new DBNode(data, (Integer) item);
-      nodes.add(dn);
+   /* for geo function use only */
+ //   ValueBuilder vb = new ValueBuilder();
+  //  vb.add(dn);
+    nodes.add(dn);
   }
 
 }

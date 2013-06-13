@@ -5,10 +5,14 @@ import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.util.*;
 
+import org.basex.*;
 import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
+import org.basex.query.value.*;
 import org.basex.query.value.node.*;
+import org.basex.util.*;
+
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import com.vividsolutions.jts.io.gml2.GMLReader;
@@ -54,14 +58,21 @@ public class GeoIndex extends QueryModule {
    * @param tree Index tree
    * @param geo Geometry that its bound is checked to find the other geometries
    * @return List of geometries
+   * @throws Exception 
    */
 
-  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
+//  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
+//    GeoItemVisitor visitor = new GeoItemVisitor(data);
+//    tree.query(geo.getEnvelopeInternal(), visitor);
+//    return visitor.getList();
+//  }
+//  public /*List<DBNode>*/ Value visitor(final String db, final ANode geo) throws Exception {
+//    STRtree tree = readSTRtree(db);
+  public List<DBNode> visitor(final STRtree tree, final Geometry geo) throws Exception {
     GeoItemVisitor visitor = new GeoItemVisitor(data);
-    tree.query(geo.getEnvelopeInternal(), visitor);
+    tree.query(/*(bxGmlReader.createGeometry(geo))*/geo.getEnvelopeInternal(), visitor);
     return visitor.getList();
   }
-
   /**
    * Finds the two nearest neighbor in an index tree (STRtree).
    * @param db Database file name
@@ -120,19 +131,19 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result contains(final String db, final ANode obj) throws Exception {
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-    List<DBNode> ret = visitor(tree, geo);
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.contains(temp))
-        vb.add(dbn);
-    }
-    return vb;
-  }
+//  public Result contains(final String db, final ANode obj) throws Exception {
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//    List<DBNode> ret = visitor(tree, geo);
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      if (geo.contains(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
 
   /**
    * Return all the geometries in a database which the specified geometry, obj
@@ -142,20 +153,20 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result within(final String db, final ANode obj) throws Exception {
-    ValueBuilder vb = new ValueBuilder();
-
-    STRtree tree = readSTRtree(db);
-     Geometry geo = bxGmlReader.createGeometry(obj);
-    List<DBNode> ret = visitor(tree, geo);
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(obj);
-      if (temp.within(geo))
-        vb.add(dbn);
-    }
-    return vb;
-  }
+//  public Result within(final String db, final ANode obj) throws Exception {
+//    ValueBuilder vb = new ValueBuilder();
+//
+//    STRtree tree = readSTRtree(db);
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//    List<DBNode> ret = visitor(tree, geo);
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(obj);
+//      if (temp.within(geo))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
 
 
   /**
@@ -170,15 +181,35 @@ public class GeoIndex extends QueryModule {
 
     STRtree tree = readSTRtree(db);
     ValueBuilder vb = new ValueBuilder();
+    long sRead = 0;
+    long read = 0;
+    long test = 0;
+    long visit = 0;
+    Performance p = new Performance();
+    //System.out.println("geo1: ");
     Geometry geo = bxGmlReader.createGeometry(obj);
-
+    sRead += p.time();
+    //System.out.println("input geo: " + geo);
     List<DBNode> ret = visitor(tree, geo);
-        Geometry temp = null;
+//    Value ret = visitor(db, obj);
+    //long visitNr = ret.size();
+    visit += p.time();
+    Geometry temp = null;
     for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.intersects(temp))
+   //  for (Value dbn : ret) {
+     // System.out.println("geo2: ");
+       temp = bxGmlReader.createGeometry((DBNode) dbn);
+      read += p.time();
+      if (geo.intersects(temp)) {
+        test += p.time();
         vb.add(dbn);
+      }
     }
+    //System.out.println("visit numbers: " + visitNr);
+    System.out.println("sRead: " + Performance.getTime(sRead, 1));
+    System.out.println("visit: " + Performance.getTime(visit, 1));
+    System.out.println("read: " + Performance.getTime(read, 1));
+    System.out.println("test: " + Performance.getTime(test, 1));
     return vb;
   }
 
@@ -190,20 +221,20 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result touches(final String db, final ANode obj) throws Exception { ///////////
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-
-    List<DBNode> ret = visitor(tree, geo);
-        Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = new GmlReader().createGeometry(dbn);
-      if (geo.touches(temp))
-        vb.add(dbn);
-    }
-    return vb;
-  }
+//  public Result touches(final String db, final ANode obj) throws Exception { ///////////
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//
+//    List<DBNode> ret = visitor(tree, geo);
+//        Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = new GmlReader().createGeometry(dbn);
+//      if (geo.touches(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
 
   /**
    * Return all the geometries in a database which
@@ -213,22 +244,22 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result equals(final String db, final ANode obj) throws Exception { ////////////
-
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-
-    List<DBNode> ret = visitor(tree, geo);
-
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.equals(temp))
-        vb.add(dbn);
-    }
-    return vb;
-  }
+//  public Result equals(final String db, final ANode obj) throws Exception { ////////////
+//
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//
+//    List<DBNode> ret = visitor(tree, geo);
+//
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      if (geo.equals(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
 
   /**
    * Return all the geometries in a database which
@@ -238,22 +269,22 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result overlaps(final String db, final ANode obj) throws Exception {
-
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-
-    List<DBNode> ret = visitor(tree, geo);
-
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.overlaps(temp))
-        vb.add(dbn);
-    }
-    return vb;
-  }
+//  public Result overlaps(final String db, final ANode obj) throws Exception {
+//
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//
+//    List<DBNode> ret = visitor(tree, geo);
+//
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      if (geo.overlaps(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
 
   /**
    * Return all the geometries in a database which
@@ -263,43 +294,46 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-  public Result crosses(final String db, final ANode obj) throws Exception {
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-
-    List<DBNode> ret = visitor(tree, geo);
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.crosses(temp))
-        vb.add(dbn);
-    }
-    return vb;
-  }
-
-  /**
-   * Return all the geometries in a database which
-   * the specified geometry, obj, covers them.
-   * @param db Database file name
-   * @param obj Geo object which is checked against the database node set
-   * @return Set of geo objects in the database
-   * @throws Exception exception
-   */
-  public Result covers(final String db, final ANode obj) throws Exception {
-
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-
-    List<DBNode> ret = visitor(tree, geo);
-
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      if (geo.covers(temp))
-        vb.add(dbn);
-    }
-    return vb;
+//  public Result crosses(final String db, final ANode obj) throws Exception {
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//
+//    List<DBNode> ret = visitor(tree, geo);
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      if (geo.crosses(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
+//
+//  /**
+//   * Return all the geometries in a database which
+//   * the specified geometry, obj, covers them.
+//   * @param db Database file name
+//   * @param obj Geo object which is checked against the database node set
+//   * @return Set of geo objects in the database
+//   * @throws Exception exception
+//   */
+//  public Result covers(final String db, final ANode obj) throws Exception {
+//
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//
+//    List<DBNode> ret = visitor(tree, geo);
+//
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      if (geo.covers(temp))
+//        vb.add(dbn);
+//    }
+//    return vb;
+//  }
+  public static void main (String[] args) throws Exception {
+    new BaseXGUI();
   }
 }

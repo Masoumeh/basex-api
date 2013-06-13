@@ -7,7 +7,6 @@ import java.io.*;
 import org.basex.*;
 import org.basex.build.*;
 import org.basex.build.xml.*;
-import org.basex.core.*;
 import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.query.*;
@@ -15,6 +14,8 @@ import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
+import org.basex.util.*;
+
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
 import com.vividsolutions.jts.io.gml2.*;
@@ -190,11 +191,25 @@ public class Geo extends QueryModule {
    * @return boolean value
    * @throws QueryException query exception
    */
+  static long read1 = 0;
+  static long read2 = 0;
+  static long test = 0;
+  Performance p = new Performance();
   @Deterministic
   public Bln intersects(final ANode node1, final ANode node2) throws QueryException {
+    //System.out.println("geo1: ");
     final Geometry geo1 = checkGeo(node1);
+    read1 += p.time();
+//    System.out.println("input geo: " + geo1);
+//    System.out.println("geo2: ");
     final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.intersects(geo2));
+//    Performance p = new Performance();
+//    long test = 0;
+    read2 += p.time();
+    boolean b = geo1.intersects(geo2);
+    test += p.time();
+//    System.out.println("single test: " + Performance.getTime(test, 1));
+    return Bln.get(b);
   }
 
   /**
@@ -352,7 +367,7 @@ public class Geo extends QueryModule {
   public ANode union(final ANode node1, final ANode node2) throws QueryException {
     final Geometry geo1 = checkGeo(node1);
     final Geometry geo2 = checkGeo(node2);
-    GeometryFactory geoFactory = new GeometryFactory();
+//    GeometryFactory geoFactory = new GeometryFactory();
 //    Geometry[] c = null;
 //    c[0] = geo1;
 //    c[1] = geo2;
@@ -430,7 +445,7 @@ public class Geo extends QueryModule {
     if(geo == null && checkGeo(node) != null)
       throw GeoErrors.geoType(node.qname().local(), "Point");
 
-    return Dbl.get( geo.getCoordinate().x);
+    return Dbl.get(geo.getCoordinate().x);
   }
 
   /**
@@ -681,8 +696,8 @@ final Geometry geo = geo(node, QNAMES);
     return geo;
   }
 
-//  long parseTime;
-//  long createTime;
+  long parseTime;
+  long createTime;
 
   /**
    * Reads an element as a gml node. Returns a geometry element
@@ -695,6 +710,8 @@ final Geometry geo = geo(node, QNAMES);
   private Geometry geo(final ANode node, final QNm... names) throws QueryException {
     if(node.type != NodeType.ELM)
       Err.FUNCMP.thrw(null, this, NodeType.ELM, node.type);
+//    Performance p = new  Performance();
+//    long sRead = 0;
     final QNm qname = node.qname();
     for(final QNm geo : names) {
       if(!qname.eq(geo)) continue;
@@ -705,8 +722,11 @@ final Geometry geo = geo(node, QNAMES);
 //        final GMLReader gmlReader = new GMLReader();
 //        final GeometryFactory geoFactory = new GeometryFactory();
 //        return gmlReader.read(input, geoFactory);
- //       final Geometry geo = 
-        return bxGmlReader.createGeometry(node);
+ //       final Geometry geo =
+        Geometry temp = bxGmlReader.createGeometry(node);
+        //sRead += p.time();
+        //System.out.println("single read: " + Performance.getTime(sRead, 1));
+        return temp;
 
       } catch (QueryException qe) {
         throw qe;
@@ -717,10 +737,11 @@ final Geometry geo = geo(node, QNAMES);
     return null;
   }
 
-//  public void time() {
-//    System.out.println("Parse: " + Performance.getTime(parseTime, 1));
-//    System.out.println("Create: " + Performance.getTime(createTime, 1));
-//  }
+  public void time() {
+    System.out.println("read1: " + Performance.getTime(read1, 1));
+    System.out.println("read2: " + Performance.getTime(read2, 1));
+    System.out.println("test: " + Performance.getTime(test, 1));
+  }
 
   /**
    * Writes an geometry and returns a string representation of the geometry.
@@ -731,7 +752,8 @@ final Geometry geo = geo(node, QNAMES);
   private DBNode gmlWriter(final Geometry geometry) throws QueryException {
     String geo;
     try {
-      geo = new GMLWriter().write(geometry);
+      geo = new GMLWriter().write(geometry).replaceAll(
+          "^<gml:(.*)>", "<gml:$1 xmlns:gml='" + string(GMLURI) + "'>");
     } catch(final Exception ex) {
       throw GeoErrors.gmlWriterErr(ex);
     }
