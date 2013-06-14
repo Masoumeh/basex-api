@@ -80,8 +80,8 @@ public final class HTTPContext {
     res.setCharacterEncoding(UTF8);
     segments = toSegments(req.getPathInfo());
 
-    final MainProp mprop = context().mprop;
     // adopt servlet-specific credentials or use global ones
+    final MainProp mprop = context().mprop;
     user = servlet.user != null ? servlet.user : mprop.get(MainProp.USER);
     pass = servlet.pass != null ? servlet.pass : mprop.get(MainProp.PASSWORD);
 
@@ -103,15 +103,20 @@ public final class HTTPContext {
   /**
    * Returns all query parameters.
    * @return parameters
+   * @throws HTTPException HTTP exception
    */
-  public Map<String, String[]> params() {
+  public Map<String, String[]> params() throws HTTPException {
     final Map<String, String[]> params = new HashMap<String, String[]>();
-    final Map<?, ?> map = req.getParameterMap();
-    for(final Entry<?, ?> s : map.entrySet()) {
-      final String key = s.getKey().toString();
-      final String[] vals = s.getValue() instanceof String[] ?
-          (String[]) s.getValue() : new String[] { s.getValue().toString() };
-      params.put(key, vals);
+    try {
+      final Map<?, ?> map = req.getParameterMap();
+      for(final Entry<?, ?> s : map.entrySet()) {
+        final String key = s.getKey().toString();
+        final String[] vals = s.getValue() instanceof String[] ?
+            (String[]) s.getValue() : new String[] { s.getValue().toString() };
+        params.put(key, vals);
+      }
+    } catch(final IllegalArgumentException ex) {
+      HTTPErr.INVALID_PARAM_X.thrw(req.getQueryString());
     }
     return params;
   }

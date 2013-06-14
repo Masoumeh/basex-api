@@ -28,7 +28,7 @@ import org.basex.util.*;
  */
 public class RESTPost extends RESTCode {
   @Override
-  void run(final HTTPContext http) throws HTTPException, IOException {
+  void run(final HTTPContext http) throws IOException {
     parseOptions(http);
 
     String enc = http.req.getCharacterEncoding();
@@ -91,7 +91,8 @@ public class RESTPost extends RESTCode {
       for(final Item it : qp.value()) {
         if(item != null) HTTPErr.MULTIPLE_CONTEXT_X.thrw();
         // create main memory instance of the specified node
-        item = DataBuilder.stripNS((ANode) it, RESTURI, ctx).serialize().toArray();
+        item = DataBuilder.stripNS((ANode) it, Token.token(RESTURI), ctx).
+            serialize().toArray();
       }
 
       // handle request

@@ -6,6 +6,8 @@ import static org.basex.http.HTTPText.*;
 import java.io.*;
 import java.net.*;
 
+import javax.net.ssl.*;
+
 import org.basex.core.*;
 import org.basex.http.*;
 import org.basex.io.*;
@@ -13,6 +15,7 @@ import org.basex.server.*;
 import org.basex.util.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.nio.*;
+import org.eclipse.jetty.server.ssl.*;
 import org.eclipse.jetty.webapp.*;
 import org.eclipse.jetty.xml.*;
 
@@ -25,11 +28,11 @@ import org.eclipse.jetty.xml.*;
  */
 public final class BaseXHTTP {
   /** Database context. */
-  final Context context = HTTPContext.init();
-  /** HTTP server. */
-  private final Server jetty;
+  private final Context context;
   /** HTTP port. */
   private int httpPort;
+  /** HTTP server. */
+  private final Server jetty;
   /** Start as daemon. */
   private boolean service;
   /** Stopped flag. */
@@ -57,6 +60,9 @@ public final class BaseXHTTP {
   public BaseXHTTP(final String... args) throws Exception {
     parseArguments(args);
 
+    // context must be initialized after parsing of arguments
+    context = HTTPContext.init();
+
     // create jetty instance and set default context to HTTP path
     final MainProp mprop = context.mprop;
     final String webapp = mprop.get(MainProp.WEBPATH);
@@ -64,18 +70,21 @@ public final class BaseXHTTP {
     jetty = (Server) new XmlConfiguration(initJetty(webapp).inputStream()).configure();
     jetty.setHandler(wac);
 
-    // retrieve jetty port
-    for(final Connector c : jetty.getConnectors()) {
-      if(c instanceof SelectChannelConnector) {
-        if(httpPort == 0) httpPort = c.getPort();
-        else c.setPort(httpPort);
+    // set the first http port (can also be https) to the port provided by command line
+    if(httpPort != 0) {
+      for(final Connector c : jetty.getConnectors()) {
+        if(c instanceof SelectChannelConnector) {
+          c.setPort(httpPort);
+          break;
+        }
       }
     }
 
     // stop server
     if(stopped) {
       stop();
-      Util.outln(HTTP + ' ' + SRV_STOPPED);
+      for(final Connector c : jetty.getConnectors())
+        Util.outln(HTTP + ' ' + SRV_STOPPED_PORT_X, c.getPort());
       // temporary console windows: keep the message visible for a while
       Performance.sleep(1000);
       return;
@@ -83,8 +92,11 @@ public final class BaseXHTTP {
 
     // start web server in a new process
     if(service) {
-      start(httpPort, args);
-      Util.outln(HTTP + ' ' + SRV_STARTED);
+      Connector connector = jetty.getConnectors()[0];
+      start(connector.getPort(), connector instanceof SslSelectChannelConnector, args);
+
+      for(final Connector c : jetty.getConnectors())
+        Util.outln(HTTP + ' ' + SRV_STARTED_PORT_X, c.getPort());
       // temporary console windows: keep the message visible for a while
       Performance.sleep(1000);
       return;
@@ -100,7 +112,8 @@ public final class BaseXHTTP {
 
     // start web server
     jetty.start();
-    Util.outln(HTTP + ' ' + SRV_STARTED, SERVERMODE);
+    for(final Connector c : jetty.getConnectors())
+      Util.outln(HTTP + ' ' + SRV_STARTED_PORT_X, c.getPort());
 
     // initialize web.xml settings, assign system properties and run database server
     // if not done so already. this must be called after starting jetty
@@ -114,15 +127,20 @@ public final class BaseXHTTP {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
-        Util.outln(HTTP + ' ' + SRV_STOPPED);
+        for(final Connector c : jetty.getConnectors())
+          Util.outln(HTTP + ' ' + SRV_STOPPED_PORT_X, c.getPort());
         final Log l = context.log;
-        if(l != null) l.writeServer(OK, HTTP + ' ' + SRV_STOPPED);
+        if(l != null) {
+          for(final Connector c : jetty.getConnectors())
+            l.writeServer(OK, HTTP + ' ' + SRV_STOPPED_PORT_X, c.getPort());
+        }
         context.close();
       }
     });
 
     // log server start at very end (logging flag could have been updated by web.xml)
-    context.log.writeServer(OK, HTTP + ' ' + SRV_STARTED);
+    for(final Connector c : jetty.getConnectors())
+      context.log.writeServer(OK, HTTP + ' ' + SRV_STARTED_PORT_X, c.getPort());
   }
 
   /**
@@ -203,11 +221,13 @@ public final class BaseXHTTP {
           res.write(in.read());
         }
       }
-    } else {
+    } else if(create) {
       // try to locate file from resource path
       final InputStream is = BaseXHTTP.class.getResourceAsStream('/' + file);
-      if(is == null && create) throw new BaseXException(in + " not found.");
+      if(is == null) throw new BaseXException(in + " not found.");
       data = new IOStream(is).read();
+    } else {
+      return trg;
     }
 
     if(create) {
@@ -286,14 +306,17 @@ public final class BaseXHTTP {
   /**
    * Starts the HTTP server in a separate process.
    * @param port server port
+   * @param ssl encryption via HTTPS
    * @param args command-line arguments
    * @throws BaseXException database exception
    */
-  private static void start(final int port, final String... args) throws BaseXException {
+  private static void start(final int port, final boolean ssl, final String... args)
+      throws BaseXException {
+
     Util.start(BaseXHTTP.class, args);
     // try to connect to the new server instance
     for(int c = 1; c < 10; ++c) {
-      if(ping(LOCALHOST, port)) return;
+      if(ping(LOCALHOST, port, ssl)) return;
       Performance.sleep(c * 100);
     }
     throw new BaseXException(CONNECTION_ERROR);
@@ -330,17 +353,19 @@ public final class BaseXHTTP {
    * Checks if a server is running.
    * @param host host
    * @param port server port
+   * @param ssl encryption via HTTPS
    * @return boolean success
    */
-  private static boolean ping(final String host, final int port) {
+  private static boolean ping(final String host, final int port, final boolean ssl) {
     try {
       // create connection
-      final URL url = new URL("http://" + host + ':' + port);
+      final URL url = new URL((ssl ? "https://" : "http://") + host + ':' + port);
       url.openConnection().getInputStream();
       return true;
     } catch(final IOException ex) {
       // if page is not found, server is running
-      return ex instanceof FileNotFoundException;
+      // if SSL handshake failed server is running, otherwise SSLException
+      return ex instanceof FileNotFoundException || ex instanceof SSLHandshakeException;
     }
   }
 

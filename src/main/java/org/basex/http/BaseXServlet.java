@@ -32,7 +32,7 @@ public abstract class BaseXServlet extends HttpServlet {
       HTTPContext.init(config.getServletContext());
       final Enumeration<String> en = config.getInitParameterNames();
       while(en.hasMoreElements()) {
-        String key = en.nextElement().toLowerCase();
+        String key = en.nextElement().toLowerCase(Locale.ENGLISH);
         final String val = config.getInitParameter(key);
         if(key.startsWith(Prop.DBPREFIX)) key = key.substring(Prop.DBPREFIX.length());
         if(key.equalsIgnoreCase(MainProp.USER[0].toString())) {
@@ -63,8 +63,9 @@ public abstract class BaseXServlet extends HttpServlet {
     } catch(final QueryException ex) {
       http.status(SC_BAD_REQUEST, Util.message(ex));
     } catch(final Exception ex) {
-      Util.errln(Util.bug(ex));
-      http.status(SC_INTERNAL_SERVER_ERROR, Util.info(UNEXPECTED, ex));
+      final String msg = Util.bug(ex);
+      Util.errln(msg);
+      http.status(SC_INTERNAL_SERVER_ERROR, Util.info(UNEXPECTED, msg));
     } finally {
       if(Prop.debug) {
         Util.outln("_ REQUEST _________________________________" + Prop.NL + req);

@@ -28,25 +28,24 @@ import com.vividsolutions.jts.io.gml2.*;
  */
 public class Geo extends QueryModule {
   /** GML URI. */
-  private static final byte[] GMLURI = token("http://www.opengis.net/gml");
-
-  /** Prefix: "gml:". */
-  private static final String GML = "gml:";
+  private static final byte[] URI = token("http://www.opengis.net/gml");
+  /** Prefix: "gml". */
+  private static final String GML = "gml";
+s
   /** QName gml:Point. */
-  private static final QNm Q_GML_POINT = new QNm(GML + "Point", GMLURI);
+  private static final QNm Q_GML_POINT = QNm.get(GML, "Point", URI);
   /** QName gml:MultiPoint. */
-  private static final QNm Q_GML_MULTIPOINT = new QNm(GML + "MultiPoint", GMLURI);
+  private static final QNm Q_GML_MULTIPOINT = QNm.get(GML, "MultiPoint", URI);
   /** QName gml:LineString. */
-  private static final QNm Q_GML_LINESTRING = new QNm(GML + "LineString", GMLURI);
+  private static final QNm Q_GML_LINESTRING = QNm.get(GML, "LineString", URI);
   /** QName gml:LinearRing. */
-  private static final QNm Q_GML_LINEARRING = new QNm(GML + "LinearRing", GMLURI);
+  private static final QNm Q_GML_LINEARRING = QNm.get(GML, "LinearRing", URI);
   /** QName gml:Polygon. */
-  private static final QNm Q_GML_POLYGON = new QNm(GML + "Polygon", GMLURI);
+  private static final QNm Q_GML_POLYGON = QNm.get(GML, "Polygon", URI);
   /** QName gml:MultiPolygon. */
-  private static final QNm Q_GML_MULTIPOLYGON = new QNm(GML + "MultiPolygon", GMLURI);
+  private static final QNm Q_GML_MULTIPOLYGON = QNm.get(GML, "MultiPolygon", URI);
   /** QName gml:MultiLineString. */
-  private static final QNm Q_GML_MULTILINESTRING =
-      new QNm(GML + "MultiLineString", GMLURI);
+  private static final QNm Q_GML_MULTILINESTRING = QNm.get(GML, "MultiLineString", URI);
 
   /** Array containing all QNames. */
   private static final QNm[] QNAMES = {
@@ -680,7 +679,6 @@ public class Geo extends QueryModule {
     return gmlWriter(((Polygon) geo).getInteriorRingN((int) n - 1));
   }
 
-
   // PRIVATE METHODS (hidden from user of module) ========================================
 
   /**
@@ -691,7 +689,7 @@ public class Geo extends QueryModule {
    * @throws QueryException query exception
    */
   private Geometry checkGeo(final ANode node) throws QueryException {
-final Geometry geo = geo(node, QNAMES);
+    final Geometry geo = geo(node, QNAMES);
     if(geo == null) throw GeoErrors.unrecognizedGeo(node.qname().local());
     return geo;
   }
