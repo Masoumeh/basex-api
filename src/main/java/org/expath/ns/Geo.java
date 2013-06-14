@@ -31,7 +31,7 @@ public class Geo extends QueryModule {
   private static final byte[] URI = token("http://www.opengis.net/gml");
   /** Prefix: "gml". */
   private static final String GML = "gml";
-s
+
   /** QName gml:Point. */
   private static final QNm Q_GML_POINT = QNm.get(GML, "Point", URI);
   /** QName gml:MultiPoint. */
@@ -751,7 +751,7 @@ s
     String geo;
     try {
       geo = new GMLWriter().write(geometry).replaceAll(
-          "^<gml:(.*)>", "<gml:$1 xmlns:gml='" + string(GMLURI) + "'>");
+          "^<gml:(.*)>", "<gml:$1 xmlns:gml='" + string(URI) + "'>");
     } catch(final Exception ex) {
       throw GeoErrors.gmlWriterErr(ex);
     }
