@@ -8,7 +8,6 @@ import org.basex.query.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
-import org.basex.util.*;
 
 import com.vividsolutions.jts.geom.*;
 
@@ -90,7 +89,8 @@ public final class GmlReader {
       if (xy.length == 1)
         coord.add(new Coordinate(toDouble(trim(xy[0])), 0, Double.NaN));
       else if (xy.length == 2)
-        coord.add(new Coordinate(toDouble(trim(xy[0])), toDouble(trim(xy[1])), Double.NaN));
+        coord.add(new Coordinate(toDouble(trim(xy[0])), toDouble(trim(xy[1])),
+            Double.NaN));
       else if (xy.length == 3)
         coord.add(new Coordinate(toDouble(trim(xy[0])), toDouble(trim(xy[1])),
           toDouble(trim(xy[2]))));
@@ -201,8 +201,8 @@ public final class GmlReader {
    */
   public Geometry createGeometry(final ANode node) throws QueryException {
     final QNm name = node.qname();
-    Performance p = new Performance();
-    long read = 0;
+    //Performance p = new Performance();
+    //long read = 0;
 
     try {
       if(name.eq(Q_GML_POLYGON)) {

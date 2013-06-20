@@ -16,15 +16,15 @@ import com.vividsolutions.jts.io.gml2.*;
  * @author Masoumeh Seydi
  */
 public class GeoItemDistance implements ItemDistance {
-
   /** Data. */
   Data data;
+
   /**
    * The distance function of two geometry is defined by this method.
-   * @param data Data
+   * @param d Data
    */
-  public GeoItemDistance(final Data data) {
-    this.data = data;
+  public GeoItemDistance(final Data d) {
+    data = d;
   }
 
   @Override

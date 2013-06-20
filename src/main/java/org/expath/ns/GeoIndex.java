@@ -1,21 +1,17 @@
 package org.expath.ns;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.util.*;
 
 import org.basex.*;
 import org.basex.data.*;
 import org.basex.query.*;
 import org.basex.query.iter.*;
-import org.basex.query.value.*;
 import org.basex.query.value.node.*;
 import org.basex.util.*;
 
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.index.strtree.STRtree;
-import com.vividsolutions.jts.io.gml2.GMLReader;
+import com.vividsolutions.jts.index.strtree.*;
+import com.vividsolutions.jts.io.gml2.*;
 
 /**
  * This class contains the functions implemented by STRtree index.
@@ -58,17 +54,16 @@ public class GeoIndex extends QueryModule {
    * @param tree Index tree
    * @param geo Geometry that its bound is checked to find the other geometries
    * @return List of geometries
-   * @throws Exception 
    */
-
 //  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
 //    GeoItemVisitor visitor = new GeoItemVisitor(data);
 //    tree.query(geo.getEnvelopeInternal(), visitor);
 //    return visitor.getList();
 //  }
-//  public /*List<DBNode>*/ Value visitor(final String db, final ANode geo) throws Exception {
+//  public /*List<DBNode>*/ Value visitor(final String db, final ANode geo)
+//    throws Exception {
 //    STRtree tree = readSTRtree(db);
-  public List<DBNode> visitor(final STRtree tree, final Geometry geo) throws Exception {
+  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
     GeoItemVisitor visitor = new GeoItemVisitor(data);
     tree.query(/*(bxGmlReader.createGeometry(geo))*/geo.getEnvelopeInternal(), visitor);
     return visitor.getList();
@@ -117,7 +112,7 @@ public class GeoIndex extends QueryModule {
     STRtree tree = readSTRtree(db);
     ValueBuilder vb = new ValueBuilder();
     Geometry geo = bxGmlReader.createGeometry(obj);
-    List ret = tree.query(geo.getEnvelopeInternal());
+    List<?> ret = tree.query(geo.getEnvelopeInternal());
     for(Object o : ret)
     vb.add(new DBNode(data, (Integer) o));
     return vb;
@@ -198,7 +193,7 @@ public class GeoIndex extends QueryModule {
     for(DBNode dbn : ret) {
    //  for (Value dbn : ret) {
      // System.out.println("geo2: ");
-       temp = bxGmlReader.createGeometry((DBNode) dbn);
+       temp = bxGmlReader.createGeometry(dbn);
       read += p.time();
       if (geo.intersects(temp)) {
         test += p.time();
@@ -286,7 +281,7 @@ public class GeoIndex extends QueryModule {
 //    return vb;
 //  }
 
-  /**
+  /*
    * Return all the geometries in a database which
    * the specified geometry, obj, crosses them.
    * @param db Database file name
@@ -333,7 +328,14 @@ public class GeoIndex extends QueryModule {
 //    }
 //    return vb;
 //  }
-  public static void main (String[] args) throws Exception {
+
+
+  /**
+   * Main class (for testing).
+   * @param args command line arguments
+   * @throws Exception any exception
+   */
+  public static void main(final String[] args) throws Exception {
     new BaseXGUI();
   }
 }

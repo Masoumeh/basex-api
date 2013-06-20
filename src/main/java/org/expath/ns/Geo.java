@@ -7,7 +7,6 @@ import java.io.*;
 import org.basex.*;
 import org.basex.build.*;
 import org.basex.build.xml.*;
-import org.basex.data.*;
 import org.basex.io.*;
 import org.basex.query.*;
 import org.basex.query.util.*;
@@ -72,7 +71,7 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public QNm geometryType(final ANode node) throws QueryException {
-    return new QNm(GML + checkGeo(node).getGeometryType());
+    return new QNm(GML + ':' + checkGeo(node).getGeometryType(), URI);
   }
 
   /**
@@ -183,6 +182,15 @@ public class Geo extends QueryModule {
     return Bln.get(geo1.disjoint(geo2));
   }
 
+  /** Test. */
+  static long read1;
+  /** Test. */
+  static long read2;
+  /** Test. */
+  static long test;
+  /** Test. */
+  Performance p = new Performance();
+
   /**
    * Returns a boolean value that shows if this geometry intersects another geometry.
    * @param node1 xml element containing gml object(s)
@@ -190,10 +198,6 @@ public class Geo extends QueryModule {
    * @return boolean value
    * @throws QueryException query exception
    */
-  static long read1 = 0;
-  static long read2 = 0;
-  static long test = 0;
-  Performance p = new Performance();
   @Deterministic
   public Bln intersects(final ANode node1, final ANode node2) throws QueryException {
     //System.out.println("geo1: ");
@@ -694,7 +698,9 @@ public class Geo extends QueryModule {
     return geo;
   }
 
+  /** Test. */
   long parseTime;
+  /** Test. */
   long createTime;
 
   /**
@@ -735,6 +741,9 @@ public class Geo extends QueryModule {
     return null;
   }
 
+  /**
+   * Returns the measured time.
+   */
   public void time() {
     System.out.println("read1: " + Performance.getTime(read1, 1));
     System.out.println("read2: " + Performance.getTime(read2, 1));
@@ -750,22 +759,29 @@ public class Geo extends QueryModule {
   private DBNode gmlWriter(final Geometry geometry) throws QueryException {
     String geo;
     try {
+      // write geometry and add namespace declaration
       geo = new GMLWriter().write(geometry).replaceAll(
-          "^<gml:(.*)>", "<gml:$1 xmlns:gml='" + string(URI) + "'>");
+          "^<gml:(.*?)>", "<gml:$1 xmlns:gml='" + string(URI) + "'>");
     } catch(final Exception ex) {
       throw GeoErrors.gmlWriterErr(ex);
     }
 
     try {
       final IO io = new IOContent(geo);
-      XMLParser xp = new XMLParser(io, context.context.prop);
-      MemData md =  MemBuilder.build(xp);
-      return new DBNode(md);
+      return new DBNode(MemBuilder.build(new XMLParser(io, context.context.prop)));
+
+
     } catch(final IOException ex) {
       throw Err.IOERR.thrw(null, ex);
-   }
+    }
   }
-  public static void main (String[] args) throws Exception {
+
+  /**
+   * Main class (for testing).
+   * @param args command line arguments
+   * @throws Exception any exception
+   */
+  public static void main(final String[] args) throws Exception {
     new BaseXGUI();
   }
 }
