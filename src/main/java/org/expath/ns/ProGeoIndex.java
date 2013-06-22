@@ -19,7 +19,7 @@ import com.vividsolutions.jts.io.gml2.*;
  *
  * Additional spatial function using STRtree index.
  */
-public class GeoIndex extends QueryModule {
+public class ProGeoIndex extends QueryModule {
   /** Tree hash map. */
   static HashMap<String, STRtree> trees = new HashMap<String, STRtree>();
   /** Data. */
@@ -55,17 +55,9 @@ public class GeoIndex extends QueryModule {
    * @param geo Geometry that its bound is checked to find the other geometries
    * @return List of geometries
    */
-//  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
-//    GeoItemVisitor visitor = new GeoItemVisitor(data);
-//    tree.query(geo.getEnvelopeInternal(), visitor);
-//    return visitor.getList();
-//  }
-//  public /*List<DBNode>*/ Value visitor(final String db, final ANode geo)
-//    throws Exception {
-//    STRtree tree = readSTRtree(db);
   public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
-    GeoItemVisitor visitor = new GeoItemVisitor(data);
-    tree.query(/*(bxGmlReader.createGeometry(geo))*/geo.getEnvelopeInternal(), visitor);
+    GeoIndexItemVisitor visitor = new GeoIndexItemVisitor(data);
+    tree.query(geo.getEnvelopeInternal(), visitor);
     return visitor.getList();
   }
   /**
@@ -126,19 +118,36 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-//  public Result contains(final String db, final ANode obj) throws Exception {
-//    STRtree tree = readSTRtree(db);
-//    ValueBuilder vb = new ValueBuilder();
-//    Geometry geo = bxGmlReader.createGeometry(obj);
-//    List<DBNode> ret = visitor(tree, geo);
-//    Geometry temp = null;
-//    for(DBNode dbn : ret) {
-//      temp = bxGmlReader.createGeometry(dbn);
-//      if (geo.contains(temp))
-//        vb.add(dbn);
-//    }
-//    return vb;
-//  }
+  public Result contains(final String db, final ANode obj) throws Exception {
+    long sRead = 0;
+    long read = 0;
+    long test = 0;
+    long visit = 0;
+    Performance p = new Performance();
+
+    STRtree tree = readSTRtree(db);
+    ValueBuilder vb = new ValueBuilder();
+    Geometry geo = bxGmlReader.createGeometry(obj);
+    sRead += p.time();
+
+    List<DBNode> ret = visitor(tree, geo);
+    visit += p.time();
+
+    Geometry temp = null;
+    for(DBNode dbn : ret) {
+      temp = bxGmlReader.createGeometry(dbn);
+      read += p.time();
+      if (geo.contains(temp)) {
+        test += p.time();
+        vb.add(dbn);
+      }
+    }
+    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
+    System.out.println("visit: " + Performance.getTime(visit, 1));
+    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
+    System.out.println("test JTS function: " + Performance.getTime(test, 1));
+    return vb;
+  }
 
   /**
    * Return all the geometries in a database which the specified geometry, obj
@@ -181,30 +190,23 @@ public class GeoIndex extends QueryModule {
     long test = 0;
     long visit = 0;
     Performance p = new Performance();
-    //System.out.println("geo1: ");
     Geometry geo = bxGmlReader.createGeometry(obj);
     sRead += p.time();
-    //System.out.println("input geo: " + geo);
     List<DBNode> ret = visitor(tree, geo);
-//    Value ret = visitor(db, obj);
-    //long visitNr = ret.size();
     visit += p.time();
     Geometry temp = null;
     for(DBNode dbn : ret) {
-   //  for (Value dbn : ret) {
-     // System.out.println("geo2: ");
-       temp = bxGmlReader.createGeometry(dbn);
+      temp = bxGmlReader.createGeometry(dbn);
       read += p.time();
       if (geo.intersects(temp)) {
         test += p.time();
         vb.add(dbn);
       }
     }
-    //System.out.println("visit numbers: " + visitNr);
-    System.out.println("sRead: " + Performance.getTime(sRead, 1));
+    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
     System.out.println("visit: " + Performance.getTime(visit, 1));
-    System.out.println("read: " + Performance.getTime(read, 1));
-    System.out.println("test: " + Performance.getTime(test, 1));
+    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
+    System.out.println("test JTS function: " + Performance.getTime(test, 1));
     return vb;
   }
 
@@ -264,22 +266,34 @@ public class GeoIndex extends QueryModule {
    * @return Set of geo objects in the database
    * @throws Exception exception
    */
-//  public Result overlaps(final String db, final ANode obj) throws Exception {
-//
-//    STRtree tree = readSTRtree(db);
-//    ValueBuilder vb = new ValueBuilder();
-//    Geometry geo = bxGmlReader.createGeometry(obj);
-//
-//    List<DBNode> ret = visitor(tree, geo);
-//
-//    Geometry temp = null;
-//    for(DBNode dbn : ret) {
-//      temp = bxGmlReader.createGeometry(dbn);
-//      if (geo.overlaps(temp))
-//        vb.add(dbn);
-//    }
-//    return vb;
-//  }
+  public Result overlaps(final String db, final ANode obj) throws Exception {
+
+    STRtree tree = readSTRtree(db);
+    ValueBuilder vb = new ValueBuilder();
+    long sRead = 0;
+    long read = 0;
+    long test = 0;
+    long visit = 0;
+    Performance p = new Performance();
+    Geometry geo = bxGmlReader.createGeometry(obj);
+    sRead += p.time();
+    List<DBNode> ret = visitor(tree, geo);
+    visit += p.time();
+    Geometry temp = null;
+    for(DBNode dbn : ret) {
+      temp = bxGmlReader.createGeometry(dbn);
+      read += p.time();
+      if (geo.overlaps(temp)) {
+        test += p.time();
+        vb.add(dbn);
+      }
+    }
+    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
+    System.out.println("visit: " + Performance.getTime(visit, 1));
+    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
+    System.out.println("test JTS function: " + Performance.getTime(test, 1));
+    return vb;
+  }
 
   /*
    * Return all the geometries in a database which

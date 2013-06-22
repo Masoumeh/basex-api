@@ -183,11 +183,11 @@ public class Geo extends QueryModule {
   }
 
   /** Test. */
-  static long read1;
+  long read1;
   /** Test. */
-  static long read2;
+  long read2;
   /** Test. */
-  static long test;
+  long test;
   /** Test. */
   Performance p = new Performance();
 
@@ -200,18 +200,12 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln intersects(final ANode node1, final ANode node2) throws QueryException {
-    //System.out.println("geo1: ");
     final Geometry geo1 = checkGeo(node1);
     read1 += p.time();
-//    System.out.println("input geo: " + geo1);
-//    System.out.println("geo2: ");
     final Geometry geo2 = checkGeo(node2);
-//    Performance p = new Performance();
-//    long test = 0;
     read2 += p.time();
     boolean b = geo1.intersects(geo2);
     test += p.time();
-//    System.out.println("single test: " + Performance.getTime(test, 1));
     return Bln.get(b);
   }
 
@@ -267,8 +261,12 @@ public class Geo extends QueryModule {
   @Deterministic
   public Bln contains(final ANode node1, final ANode node2) throws QueryException {
     final Geometry geo1 = checkGeo(node1);
+    read1 += p.time();
     final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.contains(geo2));
+    read2 += p.time();
+    boolean b = geo1.contains(geo2);
+    test += p.time();
+    return Bln.get(b);
   }
 
   /**
@@ -281,8 +279,12 @@ public class Geo extends QueryModule {
   @Deterministic
   public Bln overlaps(final ANode node1, final ANode node2) throws QueryException {
     final Geometry geo1 = checkGeo(node1);
+    read1 += p.time();
     final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.overlaps(geo2));
+    read2 += p.time();
+    boolean b = geo1.overlaps(geo2);
+    test += p.time();
+    return Bln.get(b);
   }
 
   /**
@@ -745,9 +747,9 @@ public class Geo extends QueryModule {
    * Returns the measured time.
    */
   public void time() {
-    System.out.println("read1: " + Performance.getTime(read1, 1));
-    System.out.println("read2: " + Performance.getTime(read2, 1));
-    System.out.println("test: " + Performance.getTime(test, 1));
+    System.out.println("read single input: " + Performance.getTime(read1, 1));
+    System.out.println("read geometries in DB: " + Performance.getTime(read2, 1));
+    System.out.println("test JTS function: " + Performance.getTime(test, 1));
   }
 
   /**
