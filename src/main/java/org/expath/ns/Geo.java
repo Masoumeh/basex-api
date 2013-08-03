@@ -3,6 +3,7 @@ package org.expath.ns;
 import static org.basex.util.Token.*;
 
 import java.io.*;
+import java.util.*;
 
 import org.basex.*;
 import org.basex.build.*;
@@ -260,6 +261,8 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln contains(final ANode node1, final ANode node2) throws QueryException {
+//    IdentityHashMap nodes = new IdentityHashMap();
+//    nodes.put()
     final Geometry geo1 = checkGeo(node1);
     read1 += p.time();
     final Geometry geo2 = checkGeo(node2);
@@ -644,11 +647,22 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public ANode exteriorRing(final ANode node) throws QueryException {
+    long timegeo = 0;
+    long timeJts = 0;
+    long timeWrite = 0;
+    Performance p = new Performance();
     final Geometry geo = geo(node, Q_GML_POLYGON);
+    timegeo += p.time();
     if(geo == null && checkGeo(node) != null)
       throw GeoErrors.geoType(node.qname().local(), "Polygon");
-
-    return gmlWriter(((Polygon) geo).getExteriorRing());
+    LineString ls = ((Polygon) geo).getExteriorRing();
+    timeJts += p.time();
+    DBNode dbn = gmlWriter(ls);
+    timeWrite += p.time();
+    System.out.println(" time geo:" + Performance.getTime(timegeo, 1));
+    System.out.println(" time JTS func:" + Performance.getTime(timeJts, 1));
+    System.out.println(" time Write:" + Performance.getTime(timeWrite, 1));
+    return dbn;
   }
 
   /**
@@ -716,8 +730,8 @@ public class Geo extends QueryModule {
   private Geometry geo(final ANode node, final QNm... names) throws QueryException {
     if(node.type != NodeType.ELM)
       Err.FUNCMP.thrw(null, this, NodeType.ELM, node.type);
-//    Performance p = new  Performance();
-//    long sRead = 0;
+    Performance p = new  Performance();
+
     final QNm qname = node.qname();
     for(final QNm geo : names) {
       if(!qname.eq(geo)) continue;
@@ -729,9 +743,10 @@ public class Geo extends QueryModule {
 //        final GeometryFactory geoFactory = new GeometryFactory();
 //        return gmlReader.read(input, geoFactory);
  //       final Geometry geo =
+        long sRead = 0;
         Geometry temp = bxGmlReader.createGeometry(node);
-        //sRead += p.time();
-        //System.out.println("single read: " + Performance.getTime(sRead, 1));
+        sRead += p.time();
+        System.out.println("single read in geo function: " + Performance.getTime(sRead, 1));
         return temp;
 
       } catch (QueryException qe) {

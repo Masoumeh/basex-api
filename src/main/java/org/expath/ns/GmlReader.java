@@ -8,6 +8,7 @@ import org.basex.query.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
+import org.basex.util.*;
 
 import com.vividsolutions.jts.geom.*;
 
@@ -107,26 +108,49 @@ public final class GmlReader {
    * @throws QueryException query exception
    */
   public Polygon createPolygon(final ANode node) throws QueryException {
+    System.out.println("inja poly: ");
     LinearRing shell = null;
+    long time1 = 0;
+    long time2 = 0;
+    long time3 = 0;
+    long time4 = 0;
+    long time5 = 0;
+    long time6 = 0;
+    Performance p = new Performance();
     final ArrayList<LinearRing> ir = new ArrayList<LinearRing>();
     for(final ANode ch : node.children()) {
-      if(ch.type != NodeType.ELM) continue;
+      time1 += p.time();
+      System.out.println(" time1:" + Performance.getTime(time1, 1));
+      if(ch.type != NodeType.ELM) { time2 += p.time(); continue; }
       final QNm name = ch.qname();
+      time3 += p.time();
 
       if(name.eq(Q_GML_OUTERBOUNDARY)) {
         final ANode c = ch.children().next();
         if(c == null || !c.qname().eq(Q_GML_LINEARRING)) throw GeoErrors.geoAssrErr(node);
         if(shell != null) throw GeoErrors.outRingErr(node);
         shell = createRing(c);
+        time4 += p.time();
+        System.out.println(" create outer:" + Performance.getTime(time4, 1));
       } else if(name.eq(Q_GML_INNERBOUNDARY)) {
         final ANode c = ch.children().next();
         if(c == null || !c.qname().eq(Q_GML_LINEARRING)) throw GeoErrors.geoAssrErr(node);
-        ir.add(createRing(c));
+        LinearRing ring = createRing(c);
+        time5 += p.time();
+        System.out.println(" create inner:" + Performance.getTime(time5, 1));
+        ir.add(ring);
+        //time6 += p.time();
       } else {
         throw GeoErrors.geoAssrErr(node);
       }
     }
     if(!ir.isEmpty() && shell == null) throw GeoErrors.outRingErr(node);
+    System.out.println(" time1:" + Performance.getTime(time1, 1));
+    //System.out.println(" time2:" + Performance.getTime(time2, 1));
+    //System.out.println(" time3:" + Performance.getTime(time3, 1));
+    
+    
+    //System.out.println(" time6:" + Performance.getTime(time6, 1));
     return new Polygon(shell, ir.toArray(new LinearRing[ir.size()]), gFactory);
   }
 
@@ -269,8 +293,17 @@ public final class GmlReader {
    * @throws QueryException query exception
    */
   private LinearRing createRing(final ANode n) throws QueryException {
+    long timeCoord = 0;
+    long timeRing = 0;
+    Performance p = new Performance();
     try {
-      return new LinearRing(csFactory.create(createCoordSeq(n)), gFactory);
+      CoordinateSequence cs  = csFactory.create(createCoordSeq(n));
+      timeCoord += p.time();
+      LinearRing lr = new LinearRing(cs, gFactory);
+      timeRing += p.time();
+      System.out.println("Coord time:" + Performance.getTime(timeCoord, 1));
+      System.out.println("Ring time:" + Performance.getTime(timeRing, 1));
+      return lr;
     } catch(final RuntimeException ex) {
       // catches IllegalAccessExceptions and AssertionFailedException
       throw GeoErrors.jtsConstruction(ex);

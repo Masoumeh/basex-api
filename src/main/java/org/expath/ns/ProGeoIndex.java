@@ -55,8 +55,8 @@ public class ProGeoIndex extends QueryModule {
    * @param geo Geometry that its bound is checked to find the other geometries
    * @return List of geometries
    */
-  public List<DBNode> visitor(final STRtree tree, final Geometry geo) {
-    GeoIndexItemVisitor visitor = new GeoIndexItemVisitor(data);
+  public List<DBNode> visitor(final STRtree tree, final Geometry geo, final String func) {
+    GeoIndexItemVisitor visitor = new GeoIndexItemVisitor(data, func, geo);
     tree.query(geo.getEnvelopeInternal(), visitor);
     return visitor.getList();
   }
@@ -123,14 +123,16 @@ public class ProGeoIndex extends QueryModule {
     long read = 0;
     long test = 0;
     long visit = 0;
+    long tRead = 0;
     Performance p = new Performance();
 
     STRtree tree = readSTRtree(db);
+    tRead += p.time();
     ValueBuilder vb = new ValueBuilder();
     Geometry geo = bxGmlReader.createGeometry(obj);
     sRead += p.time();
 
-    List<DBNode> ret = visitor(tree, geo);
+    List<DBNode> ret = visitor(tree, geo, "contains");
     visit += p.time();
 
     Geometry temp = null;
@@ -142,6 +144,8 @@ public class ProGeoIndex extends QueryModule {
         vb.add(dbn);
       }
     }
+    System.out.println("Visit size: " + ret.size());
+    System.out.println("STRtree Read Time: " + Performance.getTime(sRead, 1));
     System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
     System.out.println("visit: " + Performance.getTime(visit, 1));
     System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
@@ -181,43 +185,43 @@ public class ProGeoIndex extends QueryModule {
    * @return Set of geo objects in the database.
    * @throws Exception exception
    */
-  public Result intersects(final String db, final ANode obj) throws Exception {
-
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    long sRead = 0;
-    long read = 0;
-    long test = 0;
-    long visit = 0;
-    Performance p = new Performance();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-    sRead += p.time();
-    List<DBNode> ret = visitor(tree, geo);
-    visit += p.time();
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      read += p.time();
-      if (geo.intersects(temp)) {
-        test += p.time();
-        vb.add(dbn);
-      }
-    }
-    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
-    System.out.println("visit: " + Performance.getTime(visit, 1));
-    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
-    System.out.println("test JTS function: " + Performance.getTime(test, 1));
-    return vb;
-  }
-
-  /**
-   * Return all the geometries in a database which
-   * the specified geometry, obj touches them.
-   * @param db Database file name
-   * @param obj Geo object which is checked against the database node set
-   * @return Set of geo objects in the database
-   * @throws Exception exception
-   */
+//  public Result intersects(final String db, final ANode obj) throws Exception {
+//
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    long sRead = 0;
+//    long read = 0;
+//    long test = 0;
+//    long visit = 0;
+//    Performance p = new Performance();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//    sRead += p.time();
+//    List<DBNode> ret = visitor(tree, geo);
+//    visit += p.time();
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      read += p.time();
+//      if (geo.intersects(temp)) {
+//        test += p.time();
+//        vb.add(dbn);
+//      }
+//    }
+//    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
+//    System.out.println("visit: " + Performance.getTime(visit, 1));
+//    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
+//    System.out.println("test JTS function: " + Performance.getTime(test, 1));
+//    return vb;
+//  }
+//
+//  /**
+//   * Return all the geometries in a database which
+//   * the specified geometry, obj touches them.
+//   * @param db Database file name
+//   * @param obj Geo object which is checked against the database node set
+//   * @return Set of geo objects in the database
+//   * @throws Exception exception
+//   */
 //  public Result touches(final String db, final ANode obj) throws Exception { ///////////
 //    STRtree tree = readSTRtree(db);
 //    ValueBuilder vb = new ValueBuilder();
@@ -232,15 +236,15 @@ public class ProGeoIndex extends QueryModule {
 //    }
 //    return vb;
 //  }
-
-  /**
-   * Return all the geometries in a database which
-   * the specified geometry, obj, is equal with them.
-   * @param db Database file name
-   * @param obj Geo object which is checked against the database node set
-   * @return Set of geo objects in the database
-   * @throws Exception exception
-   */
+//
+//  /**
+//   * Return all the geometries in a database which
+//   * the specified geometry, obj, is equal with them.
+//   * @param db Database file name
+//   * @param obj Geo object which is checked against the database node set
+//   * @return Set of geo objects in the database
+//   * @throws Exception exception
+//   */
 //  public Result equals(final String db, final ANode obj) throws Exception { ////////////
 //
 //    STRtree tree = readSTRtree(db);
@@ -257,52 +261,52 @@ public class ProGeoIndex extends QueryModule {
 //    }
 //    return vb;
 //  }
-
-  /**
-   * Return all the geometries in a database which
-   * the specified geometry, obj, overlaps them.
-   * @param db Database file name
-   * @param obj Geo object which is checked against the database node set
-   * @return Set of geo objects in the database
-   * @throws Exception exception
-   */
-  public Result overlaps(final String db, final ANode obj) throws Exception {
-
-    STRtree tree = readSTRtree(db);
-    ValueBuilder vb = new ValueBuilder();
-    long sRead = 0;
-    long read = 0;
-    long test = 0;
-    long visit = 0;
-    Performance p = new Performance();
-    Geometry geo = bxGmlReader.createGeometry(obj);
-    sRead += p.time();
-    List<DBNode> ret = visitor(tree, geo);
-    visit += p.time();
-    Geometry temp = null;
-    for(DBNode dbn : ret) {
-      temp = bxGmlReader.createGeometry(dbn);
-      read += p.time();
-      if (geo.overlaps(temp)) {
-        test += p.time();
-        vb.add(dbn);
-      }
-    }
-    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
-    System.out.println("visit: " + Performance.getTime(visit, 1));
-    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
-    System.out.println("test JTS function: " + Performance.getTime(test, 1));
-    return vb;
-  }
-
-  /*
-   * Return all the geometries in a database which
-   * the specified geometry, obj, crosses them.
-   * @param db Database file name
-   * @param obj Geo object which is checked against the database node set
-   * @return Set of geo objects in the database
-   * @throws Exception exception
-   */
+//
+//  /**
+//   * Return all the geometries in a database which
+//   * the specified geometry, obj, overlaps them.
+//   * @param db Database file name
+//   * @param obj Geo object which is checked against the database node set
+//   * @return Set of geo objects in the database
+//   * @throws Exception exception
+//   */
+//  public Result overlaps(final String db, final ANode obj) throws Exception {
+//
+//    STRtree tree = readSTRtree(db);
+//    ValueBuilder vb = new ValueBuilder();
+//    long sRead = 0;
+//    long read = 0;
+//    long test = 0;
+//    long visit = 0;
+//    Performance p = new Performance();
+//    Geometry geo = bxGmlReader.createGeometry(obj);
+//    sRead += p.time();
+//    List<DBNode> ret = visitor(tree, geo);
+//    visit += p.time();
+//    Geometry temp = null;
+//    for(DBNode dbn : ret) {
+//      temp = bxGmlReader.createGeometry(dbn);
+//      read += p.time();
+//      if (geo.overlaps(temp)) {
+//        test += p.time();
+//        vb.add(dbn);
+//      }
+//    }
+//    System.out.println("Single geometry Read: " + Performance.getTime(sRead, 1));
+//    System.out.println("visit: " + Performance.getTime(visit, 1));
+//    System.out.println("read total geometries in DB: " + Performance.getTime(read, 1));
+//    System.out.println("test JTS function: " + Performance.getTime(test, 1));
+//    return vb;
+//  }
+//
+//  /*
+//   * Return all the geometries in a database which
+//   * the specified geometry, obj, crosses them.
+//   * @param db Database file name
+//   * @param obj Geo object which is checked against the database node set
+//   * @return Set of geo objects in the database
+//   * @throws Exception exception
+//   */
 //  public Result crosses(final String db, final ANode obj) throws Exception {
 //    STRtree tree = readSTRtree(db);
 //    ValueBuilder vb = new ValueBuilder();
@@ -327,7 +331,7 @@ public class ProGeoIndex extends QueryModule {
 //   * @throws Exception exception
 //   */
 //  public Result covers(final String db, final ANode obj) throws Exception {
-//
+
 //    STRtree tree = readSTRtree(db);
 //    ValueBuilder vb = new ValueBuilder();
 //    Geometry geo = bxGmlReader.createGeometry(obj);
