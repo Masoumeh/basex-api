@@ -8,6 +8,7 @@ import org.basex.query.*;
 import org.basex.query.iter.*;
 import org.basex.query.value.*;
 import org.basex.query.value.node.*;
+import org.basex.util.*;
 
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.index.strtree.*;
@@ -59,9 +60,14 @@ import com.vividsolutions.jts.io.gml2.*;
      */
     public Value visitor(final String db, final ANode geo)
       throws Exception {
+      long visitTime = 0;
+      Performance p = new Performance();
       STRtree tree = readSTRtree(db);
       GeoItemVisitor visitor = new GeoItemVisitor(data);
       tree.query((bxGmlReader.createGeometry(geo)).getEnvelopeInternal(), visitor);
+      visitTime += p.time();
+//      System.out.println("Visit Time: " + Performance.getTime(visitTime, 1));
+//      System.out.println("Visit Size:" + visitor.getList().size());
       return visitor.getList();
     }
     /**

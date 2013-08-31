@@ -17,6 +17,7 @@ import org.basex.query.value.type.*;
 import org.basex.util.*;
 
 import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.geom.prep.*;
 import com.vividsolutions.jts.io.*;
 import com.vividsolutions.jts.io.gml2.*;
 
@@ -189,6 +190,7 @@ public class Geo extends QueryModule {
   long read2;
   /** Test. */
   long test;
+  long readTest;
   /** Test. */
   Performance p = new Performance();
 
@@ -201,12 +203,30 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln intersects(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    read1 += p.time();
-    final Geometry geo2 = checkGeo(node2);
-    read2 += p.time();
-    boolean b = geo1.intersects(geo2);
+
+//    p.time();
+//    final Geometry geo1 = checkGeo(node1);
+//    read1 += p.time();
+//    p.time();
+//    final Geometry geo2 = checkGeo(node2);
+//    read2 += p.time();
+//    p.time();
+//    boolean b = geo1.intersects(geo2);
+//    test += p.time();
+    p.time();
+    if (!nodes.containsKey(node1)) {
+      nodes.put(node1, checkGeo(node1));
+      read1 += p.time();
+    }
+    p.time();
+    if (!nodes.containsKey(node2)) {
+      nodes.put(node2, checkGeo(node2));
+      read2 += p.time();
+    }
+    p.time();
+    boolean b = nodes.get(node1).intersects(nodes.get(node2));
     test += p.time();
+
     return Bln.get(b);
   }
 
@@ -251,7 +271,7 @@ public class Geo extends QueryModule {
     final Geometry geo2 = checkGeo(node2);
     return Bln.get(geo1.within(geo2));
   }
-
+  static IdentityHashMap<ANode, Geometry> nodes = new IdentityHashMap<ANode, Geometry>();
   /**
    * Returns a boolean value that shows if this geometry contains the specified geometry.
    * @param node1 xml element containing gml object(s)
@@ -259,16 +279,28 @@ public class Geo extends QueryModule {
    * @return boolean value
    * @throws QueryException query exception
    */
+
   @Deterministic
   public Bln contains(final ANode node1, final ANode node2) throws QueryException {
-//    IdentityHashMap nodes = new IdentityHashMap();
-//    nodes.put()
-    final Geometry geo1 = checkGeo(node1);
-    read1 += p.time();
-    final Geometry geo2 = checkGeo(node2);
-    read2 += p.time();
-    boolean b = geo1.contains(geo2);
-    test += p.time();
+
+    if (!nodes.containsKey(node1)) {
+      Geometry g = checkGeo(node1);
+      //read1 += p.time
+      nodes.put(node1,g);
+      read1 += p.time();
+    } //else System.out.println("node1: "+ node1);
+    if (!nodes.containsKey(node2)) {
+      nodes.put(node2, checkGeo(node2));
+      read2 += p.time();
+    } //else System.out.println("node2: "+ node2);
+    boolean b = nodes.get(node1).contains(nodes.get(node2));
+//
+//    final Geometry geo1 = checkGeo(node1);
+//    read1 += p.time();
+//    final Geometry geo2 = checkGeo(node2);
+//    read2 += p.time();
+//    boolean b = geo1.contains(geo2);
+//    test += p.time();
     return Bln.get(b);
   }
 
@@ -737,16 +769,18 @@ public class Geo extends QueryModule {
       if(!qname.eq(geo)) continue;
     // type found... create reader and geometry element
       try {
+        long sRead = 0;
         final GmlReader bxGmlReader = new GmlReader();
 //        final String input = node.serialize().toString();
 //        final GMLReader gmlReader = new GMLReader();
 //        final GeometryFactory geoFactory = new GeometryFactory();
-//        return gmlReader.read(input, geoFactory);
- //       final Geometry geo =
-        long sRead = 0;
+//         
+//        final Geometry temp = gmlReader.read(input, geoFactory);
+//        long sRead = 0;
+        p.time();
         Geometry temp = bxGmlReader.createGeometry(node);
         sRead += p.time();
-        System.out.println("single read in geo function: " + Performance.getTime(sRead, 1));
+//        System.out.println("single read in geo function: " + Performance.getTime(sRead, 1));
         return temp;
 
       } catch (QueryException qe) {
@@ -762,6 +796,8 @@ public class Geo extends QueryModule {
    * Returns the measured time.
    */
   public void time() {
+//    System.out.println("read single input: " + Performance.getTime(read1, 1));
+//    System.out.println("read geometries in DB: " + Performance.getTime(read2, 1));
     System.out.println("read single input: " + Performance.getTime(read1, 1));
     System.out.println("read geometries in DB: " + Performance.getTime(read2, 1));
     System.out.println("test JTS function: " + Performance.getTime(test, 1));

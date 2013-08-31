@@ -84,19 +84,78 @@ public final class GmlReader {
    */
   public Coordinate[] createCoordinate(final byte[] pattern) throws QueryException {
     final List<Coordinate> coord = new ArrayList<Coordinate>();
-    for(final byte[] coords : split(norm(pattern), ' ')) {
-      final byte[][] xy = split(coords, ',');
+//    Scanner scan = new Scanner(source)
+    //byte[] temp = new byte[150];
+    byte[] x = new byte[100];
+    byte[] y = new byte[100];
+    //byte[] z = new byte[100];
+    int comma = 0;
+    //int length = pattern.length;
+    int j = 0;
+    for (byte b : pattern) {
+      if (b == 44) {
+        j = 0;
+        comma++;
+        continue;
+      }
+      else if (b == 32 || b == 13 || b == 10) {
+        //if (x != null && y != null && z != null)
+          coord.add(new Coordinate(toDouble(x), toDouble(y)));
+        comma = 0;
+        j = 0;
+        x = new byte[100];
+        y = new byte[100];
+     //   z = new byte[100];
+        continue;
+      }
+      // if (pattern[i] >= 48 &&  pattern[i] <= 57 || pattern[i] == 43 || pattern[i] == 45 || pattern[i] == 46) {
+      else if (comma == 0)
+          x[j] = b;
+      else if (comma == 1) y[j] = b;
+   //   else z[j] = pattern[i];
+      j++;
+//      if (pattern)
+//        coord.add(new Coordinate(toDouble(x), toDouble(y)));
+//      }
+
+
+//
+//      if (pattern[i] == 32 || pattern[i] == 13 || pattern[i] == 10 || i + 1 == length) {
+//        int w = 0;
+//        byte[] p = new byte[j];
+//        for (int k = 0; k < j; k++) {
+//           if (temp[k] != 44) {
+//             p[w] = temp[k];
+//             w++;
+//           }
+//           if (temp[k] == 44 || k + 1 == j) {
+//             w = 0;
+//             point[countX][countY] = toDouble(p);
+//             p = new byte[j];
+//             for (int t = k + 1; t < temp.length && temp[t] != 0; t++) {
+//               p[w] = temp[t];
+//               w++;
+//             }
+//             point[countX][1] = toDouble(p);
+//             countY++;
+  //           p = new byte[temp.length];
+           }
+    coord.add(new Coordinate(toDouble(x), toDouble(y)));
+//        }
+//        j = 0;
+      //  System.out.println("Point: " + point[countX][countY]);
+//        coord.add(new Coordinate(point[countX][0], point[countX][1], Double.NaN));
+//        countX++;
+//        countY = 0;
+//        temp = new byte[150];
+//      }
+//    }
+//    for(final byte[] coords : split(norm(pattern), ' ')) {
+//      final byte[][] xy = split(coords, ',');
       //if(xy.length != 2) throw GeoErrors.invalidCoordErr();
-      if (xy.length == 1)
-        coord.add(new Coordinate(toDouble(trim(xy[0])), 0, Double.NaN));
-      else if (xy.length == 2)
-        coord.add(new Coordinate(toDouble(trim(xy[0])), toDouble(trim(xy[1])),
-            Double.NaN));
-      else if (xy.length == 3)
-        coord.add(new Coordinate(toDouble(trim(xy[0])), toDouble(trim(xy[1])),
-          toDouble(trim(xy[2]))));
-      else throw GeoErrors.invalidCoordErr();
-    }
+//    for(int i = 0; i < countX; i++) {
+//      coord.add(new Coordinate(point[i][0], point[i][1], Double.NaN));
+//    }
     if(!coord.isEmpty()) return coord.toArray(new Coordinate[coord.size()]);
     throw GeoErrors.invalidCoordErr();
   }
@@ -108,7 +167,6 @@ public final class GmlReader {
    * @throws QueryException query exception
    */
   public Polygon createPolygon(final ANode node) throws QueryException {
-    System.out.println("inja poly: ");
     LinearRing shell = null;
     long time1 = 0;
     long time2 = 0;
@@ -120,7 +178,7 @@ public final class GmlReader {
     final ArrayList<LinearRing> ir = new ArrayList<LinearRing>();
     for(final ANode ch : node.children()) {
       time1 += p.time();
-      System.out.println(" time1:" + Performance.getTime(time1, 1));
+      //System.out.println(" time1:" + Performance.getTime(time1, 1));
       if(ch.type != NodeType.ELM) { time2 += p.time(); continue; }
       final QNm name = ch.qname();
       time3 += p.time();
@@ -131,13 +189,13 @@ public final class GmlReader {
         if(shell != null) throw GeoErrors.outRingErr(node);
         shell = createRing(c);
         time4 += p.time();
-        System.out.println(" create outer:" + Performance.getTime(time4, 1));
+//        System.out.println(" create outer:" + Performance.getTime(time4, 1));
       } else if(name.eq(Q_GML_INNERBOUNDARY)) {
         final ANode c = ch.children().next();
         if(c == null || !c.qname().eq(Q_GML_LINEARRING)) throw GeoErrors.geoAssrErr(node);
         LinearRing ring = createRing(c);
         time5 += p.time();
-        System.out.println(" create inner:" + Performance.getTime(time5, 1));
+//        System.out.println(" create inner:" + Performance.getTime(time5, 1));
         ir.add(ring);
         //time6 += p.time();
       } else {
@@ -145,11 +203,11 @@ public final class GmlReader {
       }
     }
     if(!ir.isEmpty() && shell == null) throw GeoErrors.outRingErr(node);
-    System.out.println(" time1:" + Performance.getTime(time1, 1));
-    //System.out.println(" time2:" + Performance.getTime(time2, 1));
-    //System.out.println(" time3:" + Performance.getTime(time3, 1));
-    
-    
+//    System.out.println(" time1:" + Performance.getTime(time1, 1));
+//    System.out.println(" time2:" + Performance.getTime(time2, 1));
+//    System.out.println(" time3:" + Performance.getTime(time3, 1));
+
+
     //System.out.println(" time6:" + Performance.getTime(time6, 1));
     return new Polygon(shell, ir.toArray(new LinearRing[ir.size()]), gFactory);
   }
@@ -301,8 +359,8 @@ public final class GmlReader {
       timeCoord += p.time();
       LinearRing lr = new LinearRing(cs, gFactory);
       timeRing += p.time();
-      System.out.println("Coord time:" + Performance.getTime(timeCoord, 1));
-      System.out.println("Ring time:" + Performance.getTime(timeRing, 1));
+//      System.out.println("Coord time:" + Performance.getTime(timeCoord, 1));
+//      System.out.println("Ring time:" + Performance.getTime(timeRing, 1));
       return lr;
     } catch(final RuntimeException ex) {
       // catches IllegalAccessExceptions and AssertionFailedException
@@ -324,7 +382,8 @@ public final class GmlReader {
 
       final QNm name = ch.qname();
       if(name.eq(Q_GML_COORDINATES)) {
-        return createCoordinate(ch.string());
+        byte[] a = ch.string();
+        return createCoordinate(trim(a));
       } else if(name.eq(Q_GML_COORD)) {
         co.add(createCoord(ch));
       } else {
