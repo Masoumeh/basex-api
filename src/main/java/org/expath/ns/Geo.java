@@ -14,10 +14,7 @@ import org.basex.query.util.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.node.*;
 import org.basex.query.value.type.*;
-import org.basex.util.*;
-
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.geom.prep.*;
 import com.vividsolutions.jts.io.*;
 import com.vividsolutions.jts.io.gml2.*;
 
@@ -53,6 +50,8 @@ public class Geo extends QueryModule {
     Q_GML_POINT, Q_GML_LINESTRING, Q_GML_POLYGON, Q_GML_MULTIPOINT,
     Q_GML_MULTILINESTRING, Q_GML_MULTIPOLYGON, Q_GML_LINEARRING
   };
+  /** Cashing map. */
+  static IdentityHashMap<ANode, Geometry> nodes = new IdentityHashMap<ANode, Geometry>();
 
   /**
    * Returns the dimension of an item.
@@ -165,9 +164,13 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln equals(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.equals(geo2));
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).equals(nodes.get(node2)));
   }
 
   /**
@@ -184,16 +187,6 @@ public class Geo extends QueryModule {
     return Bln.get(geo1.disjoint(geo2));
   }
 
-  /** Test. */
-  long read1;
-  /** Test. */
-  long read2;
-  /** Test. */
-  long test;
-  long readTest;
-  /** Test. */
-  Performance p = new Performance();
-
   /**
    * Returns a boolean value that shows if this geometry intersects another geometry.
    * @param node1 xml element containing gml object(s)
@@ -203,30 +196,12 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln intersects(final ANode node1, final ANode node2) throws QueryException {
-
-//    p.time();
-//    final Geometry geo1 = checkGeo(node1);
-//    read1 += p.time();
-//    p.time();
-//    final Geometry geo2 = checkGeo(node2);
-//    read2 += p.time();
-//    p.time();
-//    boolean b = geo1.intersects(geo2);
-//    test += p.time();
-    p.time();
-    if (!nodes.containsKey(node1)) {
+    if (!nodes.containsKey(node1))
       nodes.put(node1, checkGeo(node1));
-      read1 += p.time();
-    }
-    p.time();
-    if (!nodes.containsKey(node2)) {
-      nodes.put(node2, checkGeo(node2));
-      read2 += p.time();
-    }
-    p.time();
-    boolean b = nodes.get(node1).intersects(nodes.get(node2));
-    test += p.time();
 
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+    boolean b = nodes.get(node1).intersects(nodes.get(node2));
     return Bln.get(b);
   }
 
@@ -239,9 +214,13 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln touches(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.touches(geo2));
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).touches(nodes.get(node2)));
   }
 
   /**
@@ -253,9 +232,13 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln crosses(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.crosses(geo2));
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).crosses(nodes.get(node2)));
   }
 
   /**
@@ -267,11 +250,15 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln within(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.within(geo2));
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).within(nodes.get(node2)));
   }
-  static IdentityHashMap<ANode, Geometry> nodes = new IdentityHashMap<ANode, Geometry>();
+
   /**
    * Returns a boolean value that shows if this geometry contains the specified geometry.
    * @param node1 xml element containing gml object(s)
@@ -283,25 +270,13 @@ public class Geo extends QueryModule {
   @Deterministic
   public Bln contains(final ANode node1, final ANode node2) throws QueryException {
 
-    if (!nodes.containsKey(node1)) {
-      Geometry g = checkGeo(node1);
-      //read1 += p.time
-      nodes.put(node1,g);
-      read1 += p.time();
-    } //else System.out.println("node1: "+ node1);
-    if (!nodes.containsKey(node2)) {
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
       nodes.put(node2, checkGeo(node2));
-      read2 += p.time();
-    } //else System.out.println("node2: "+ node2);
-    boolean b = nodes.get(node1).contains(nodes.get(node2));
-//
-//    final Geometry geo1 = checkGeo(node1);
-//    read1 += p.time();
-//    final Geometry geo2 = checkGeo(node2);
-//    read2 += p.time();
-//    boolean b = geo1.contains(geo2);
-//    test += p.time();
-    return Bln.get(b);
+
+    return Bln.get(nodes.get(node1).contains(nodes.get(node2)));
   }
 
   /**
@@ -313,13 +288,13 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public Bln overlaps(final ANode node1, final ANode node2) throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    read1 += p.time();
-    final Geometry geo2 = checkGeo(node2);
-    read2 += p.time();
-    boolean b = geo1.overlaps(geo2);
-    test += p.time();
-    return Bln.get(b);
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).overlaps(nodes.get(node2)));
   }
 
   /**
@@ -335,9 +310,14 @@ public class Geo extends QueryModule {
   @Deterministic
   public Bln relate(final ANode node1, final ANode node2, final Str intersectionMatrix)
       throws QueryException {
-    final Geometry geo1 = checkGeo(node1);
-    final Geometry geo2 = checkGeo(node2);
-    return Bln.get(geo1.relate(geo2, intersectionMatrix.toJava()));
+    if (!nodes.containsKey(node1))
+      nodes.put(node1, checkGeo(node1));
+
+    if (!nodes.containsKey(node2))
+      nodes.put(node2, checkGeo(node2));
+
+    return Bln.get(nodes.get(node1).relate(nodes.get(node2),
+        intersectionMatrix.toJava()));
   }
 
   /**
@@ -407,11 +387,6 @@ public class Geo extends QueryModule {
   public ANode union(final ANode node1, final ANode node2) throws QueryException {
     final Geometry geo1 = checkGeo(node1);
     final Geometry geo2 = checkGeo(node2);
-//    GeometryFactory geoFactory = new GeometryFactory();
-//    Geometry[] c = null;
-//    c[0] = geo1;
-//    c[1] = geo2;
-//    GeometryCollection g = new GeometryCollection(c, geoFactory);
     return gmlWriter(geo1.union(geo2));
   }
 
@@ -679,22 +654,10 @@ public class Geo extends QueryModule {
    */
   @Deterministic
   public ANode exteriorRing(final ANode node) throws QueryException {
-    long timegeo = 0;
-    long timeJts = 0;
-    long timeWrite = 0;
-    Performance p = new Performance();
     final Geometry geo = geo(node, Q_GML_POLYGON);
-    timegeo += p.time();
     if(geo == null && checkGeo(node) != null)
       throw GeoErrors.geoType(node.qname().local(), "Polygon");
-    LineString ls = ((Polygon) geo).getExteriorRing();
-    timeJts += p.time();
-    DBNode dbn = gmlWriter(ls);
-    timeWrite += p.time();
-    System.out.println(" time geo:" + Performance.getTime(timegeo, 1));
-    System.out.println(" time JTS func:" + Performance.getTime(timeJts, 1));
-    System.out.println(" time Write:" + Performance.getTime(timeWrite, 1));
-    return dbn;
+    return gmlWriter(((Polygon) geo).getExteriorRing());
   }
 
   /**
@@ -746,11 +709,6 @@ public class Geo extends QueryModule {
     return geo;
   }
 
-  /** Test. */
-  long parseTime;
-  /** Test. */
-  long createTime;
-
   /**
    * Reads an element as a gml node. Returns a geometry element
    * or {@code null} if the element does not match one of the specified types.
@@ -762,26 +720,13 @@ public class Geo extends QueryModule {
   private Geometry geo(final ANode node, final QNm... names) throws QueryException {
     if(node.type != NodeType.ELM)
       Err.FUNCMP.thrw(null, this, NodeType.ELM, node.type);
-    Performance p = new  Performance();
-
     final QNm qname = node.qname();
     for(final QNm geo : names) {
       if(!qname.eq(geo)) continue;
     // type found... create reader and geometry element
       try {
-        long sRead = 0;
         final GmlReader bxGmlReader = new GmlReader();
-//        final String input = node.serialize().toString();
-//        final GMLReader gmlReader = new GMLReader();
-//        final GeometryFactory geoFactory = new GeometryFactory();
-//         
-//        final Geometry temp = gmlReader.read(input, geoFactory);
-//        long sRead = 0;
-        p.time();
-        Geometry temp = bxGmlReader.createGeometry(node);
-        sRead += p.time();
-//        System.out.println("single read in geo function: " + Performance.getTime(sRead, 1));
-        return temp;
+        return bxGmlReader.createGeometry(node);
 
       } catch (QueryException qe) {
         throw qe;
@@ -790,17 +735,6 @@ public class Geo extends QueryModule {
       }
     }
     return null;
-  }
-
-  /**
-   * Returns the measured time.
-   */
-  public void time() {
-//    System.out.println("read single input: " + Performance.getTime(read1, 1));
-//    System.out.println("read geometries in DB: " + Performance.getTime(read2, 1));
-    System.out.println("read single input: " + Performance.getTime(read1, 1));
-    System.out.println("read geometries in DB: " + Performance.getTime(read2, 1));
-    System.out.println("test JTS function: " + Performance.getTime(test, 1));
   }
 
   /**
